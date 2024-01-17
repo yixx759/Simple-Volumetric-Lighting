@@ -1,4 +1,4 @@
-# Simple-Volumetric--Lighting
+# Simple-Volumetric-Lighting
 
 [WIP] ~~Basic RayMarch~~ -> Low Res Rendering -> Bilateral Upsampling -> Dithering -> Bilateral Gaussian Blur.
 
