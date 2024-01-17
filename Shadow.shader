@@ -24,7 +24,7 @@ Shader "Unlit/Shadow"
             #include "AutoLight.cginc"
          
            #define TAU 6.28318
-           #define M_PI 3.14159
+           #define PI 3.14159
           
             
          
