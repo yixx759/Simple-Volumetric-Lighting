@@ -108,7 +108,7 @@ float inshadow(float3 worldpos)
             float Henyey( float g, float costheta)
             {
 
-               float newval =  (1.0-g*g)/(4*M_PI*pow(1.0+g*g-(2.0*g)*costheta,3/2));
+               float newval =  (1.0-g*g)/(4*PI*pow(1.0+g*g-(2.0*g)*costheta,3/2));
                 return newval;
                 
             }
