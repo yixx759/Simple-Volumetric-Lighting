@@ -166,7 +166,7 @@ float inshadow(float3 worldpos)
                 float v = inshadow(x);
 
                  //Add light based off where the light scatter found using look and light direction
-                 float Li = Henyey(_Albedo, dot(-viewDir, _WorldSpaceLightPos0))*v;
+                 float Li = Henyey(_Albedo, dot(viewDir, _WorldSpaceLightPos0))*v;
                  
                  //Add color
                  L +=  Li*_Phi*_Fcol;
