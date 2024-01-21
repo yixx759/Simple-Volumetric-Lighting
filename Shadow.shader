@@ -9,26 +9,12 @@ Shader "Unlit/Shadow"
     {
         Tags { "RenderType"="Opaque" "LightMode"="ForwardBase" }
         LOD 100
-
-        Pass
-        {
-            CGPROGRAM
-            #pragma vertex vert
-            #pragma fragment frag
-            // make fog work
-      
+    CGINCLUDE
 
             #include "UnityCG.cginc"
                
           
             #include "AutoLight.cginc"
-         
-           #define TAU 6.28318
-           #define PI 3.14159
-          
-            
-         
-
             struct appdata
             {
                 float4 vertex : POSITION;
@@ -43,19 +29,10 @@ Shader "Unlit/Shadow"
                 float2 ray : TEXCOORD1;
                 float4 vertex : SV_POSITION;
             };
-            
-            sampler2D _MainTex , _CameraDepthTexture,_ShadowCascade;
-            float4 _MainTex_ST,  _Fcol;
-            float4x4 InverseView;
-            float4x4 InverseProj;
-            int _samples;
-            float _Albedo, _Phi;
-            
-            
+            sampler2D _MainTex;
+            float4 _MainTex_ST;
 
-            
-
-            v2f vert (appdata v)
+        v2f vert (appdata v)
             {
                 v2f o;
                 o.vertex = UnityObjectToClipPos(v.vertex);
@@ -66,6 +43,36 @@ Shader "Unlit/Shadow"
                 return o;
             }
 
+    ENDCG
+        
+        
+        Pass
+        {
+            CGPROGRAM
+            #pragma vertex vert
+            #pragma fragment frag
+            // make fog work
+      
+
+            
+         
+           #define TAU 6.28318
+           #define PI 3.14159
+          
+            
+         
+
+            
+            
+            sampler2D  _CameraDepthTexture,_ShadowCascade;
+            float4   _Fcol;
+            float4x4 InverseView;
+            float4x4 InverseProj;
+            int _samples;
+            float _Albedo, _Phi;
+            
+            
+            
 
             //Use world space co-ordinate to find if that position is in shadow
 float inshadow(float3 worldpos)
@@ -173,7 +180,7 @@ float inshadow(float3 worldpos)
             }
                 L = L/_samples;
              
-                 return float4(col+ L,1);
+                 return float4( L,1);
           
             
 
@@ -181,5 +188,22 @@ float inshadow(float3 worldpos)
             }
             ENDCG
         }
+        
+        Pass{
+            
+            Blend one one
+            CGPROGRAM
+            #pragma vertex vert
+            #pragma fragment frag
+            
+
+            fixed4 frag(v2f i ) : SV_Target{
+
+                return tex2D(_MainTex, i.uv);
+            }
+            
+
+            ENDCG
+            }
     }
 }
