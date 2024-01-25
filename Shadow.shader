@@ -298,7 +298,7 @@ float inshadow(float3 worldpos)
 float4 Quarter_TexelSize;
 float4 QuarterD_TexelSize;
 float4 _MainTex_TexelSize;
-            float   _omegaspace , _omegatonal ;
+            
 
 
             struct outvert
