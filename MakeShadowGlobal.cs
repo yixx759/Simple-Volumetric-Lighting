@@ -33,19 +33,19 @@ public class MakeShadowGlobal : MonoBehaviour
         };
 
         RenderTargetIdentifier shadowmap = BuiltinRenderTextureType.CurrentActive;
-        if (Volumetric.Downsamp == DownSample.Full)
-        {
+        // if (Volumetric.Downsamp == DownSample.Full)
+        // {
             
             ShadowmapCopy = new RenderTexture(1024, 1024, 16, RenderTextureFormat.ARGB32);
-        }
-        else if (Volumetric.Downsamp == DownSample.Half) 
-        {
-            ShadowmapCopy = new RenderTexture(1024/2, 1024/2, 16, RenderTextureFormat.ARGB32);
-        }
-        else
-        {
-            ShadowmapCopy = new RenderTexture(1024/4, 1024/4, 16, RenderTextureFormat.ARGB32);
-        }
+        // }
+        // else if (Volumetric.Downsamp == DownSample.Half) 
+        // {
+        //     ShadowmapCopy = new RenderTexture(1024/2, 1024/2, 16, RenderTextureFormat.ARGB32);
+        // }
+        // else
+        // {
+        //     ShadowmapCopy = new RenderTexture(1024/4, 1024/4, 16, RenderTextureFormat.ARGB32);
+        // }
 
         
         ShadowmapCopy.filterMode = FilterMode.Point;
