@@ -3,6 +3,7 @@ Shader "Unlit/Shadow"
     Properties
     {
         _MainTex ("Texture", 2D) = "white" {}
+        
       
     }
     SubShader
@@ -11,8 +12,10 @@ Shader "Unlit/Shadow"
         LOD 100
     CGINCLUDE
 
+
+
             #include "UnityCG.cginc"
-               
+            #define TAU 6.283185307
           
             #include "AutoLight.cginc"
             struct appdata
@@ -28,20 +31,16 @@ Shader "Unlit/Shadow"
                 float2 uv : TEXCOORD0;
                 float2 ray : TEXCOORD1;
                 float4 vertex : SV_POSITION;
+               
+               
             };
-            sampler2D _MainTex;
+
+            SamplerState point_clamp_sampler;
+            SamplerState sampler_MainTex;
+            Texture2D _MainTex;
             float4 _MainTex_ST;
 
-        v2f vert (appdata v)
-            {
-                v2f o;
-                o.vertex = UnityObjectToClipPos(v.vertex);
-                o.uv = TRANSFORM_TEX(v.uv, _MainTex);
-              
-                o.ray =  v.Ray ;
-             
-                return o;
-            }
+       
 
     ENDCG
         
@@ -59,13 +58,21 @@ Shader "Unlit/Shadow"
            #define TAU 6.28318
            #define PI 3.14159
           
-            
+             v2f vert (appdata v)
+            {
+                v2f o;
+                o.vertex = UnityObjectToClipPos(v.vertex);
+                o.uv = TRANSFORM_TEX(v.uv, _MainTex);
+              
+                o.ray =  v.Ray ;
+             
+                return o;
+            }
          
-
-            
+  
             
             sampler2D  _CameraDepthTexture,_ShadowCascade;
-            float4   _Fcol;
+            
             float4x4 InverseView;
             float4x4 InverseProj;
             int _samples;
@@ -125,7 +132,7 @@ float inshadow(float3 worldpos)
             {
                 
                 //Get screen Col
-                fixed4 col = tex2D(_MainTex, i.uv);
+                fixed4 col = _MainTex.Sample(sampler_MainTex, i.uv);
 
                 //Get the depth of object from camera to conver to world
                 float CamDeep = SAMPLE_DEPTH_TEXTURE(_CameraDepthTexture, i.uv).r;
@@ -176,7 +183,7 @@ float inshadow(float3 worldpos)
                  float Li = Henyey(_Albedo, dot(viewDir, _WorldSpaceLightPos0))*v;
                  
                  //Add color
-                 L +=  Li*_Phi*_Fcol;
+                 L +=  Li*_Phi;
             }
                 L = L/_samples;
              
@@ -189,21 +196,207 @@ float inshadow(float3 worldpos)
             ENDCG
         }
         
+   
+        
         Pass{
             
-            Blend one one
+             //Point Sampler without Additive
             CGPROGRAM
             #pragma vertex vert
             #pragma fragment frag
             
-
+ v2f vert (appdata v)
+            {
+                v2f o;
+                o.vertex = UnityObjectToClipPos(v.vertex);
+                o.uv = TRANSFORM_TEX(v.uv, _MainTex);
+              
+                o.ray =  v.Ray ;
+             
+                return o;
+            }
             fixed4 frag(v2f i ) : SV_Target{
 
-                return tex2D(_MainTex, i.uv);
+                fixed4 col = _MainTex.Sample(sampler_MainTex, i.uv);
+                return col;
+            }
+            
+
+            ENDCG
+            }
+        
+        Pass{
+            
+            //Point Sampler with Additive
+        Blend one one
+            CGPROGRAM
+            #pragma vertex vert
+            #pragma fragment frag
+            
+             v2f vert (appdata v)
+            {
+                v2f o;
+                o.vertex = UnityObjectToClipPos(v.vertex);
+                o.uv = TRANSFORM_TEX(v.uv, _MainTex);
+              
+                o.ray =  v.Ray ;
+             
+                return o;
+            }
+            fixed4 frag(v2f i) : SV_Target{
+
+                fixed4 col = _MainTex.Sample(point_clamp_sampler, i.uv);
+                return col;
+            }
+            
+
+            ENDCG
+            }
+        
+        Pass{
+            
+             //Depth of camera
+            CGPROGRAM
+            #pragma vertex vert
+            #pragma fragment frag
+            
+            //Texture2D  _CameraDepthTexture;
+             v2f vert (appdata v)
+            {
+                v2f o;
+                o.vertex = UnityObjectToClipPos(v.vertex);
+                o.uv = TRANSFORM_TEX(v.uv, _MainTex);
+              
+                o.ray =  v.Ray ;
+             
+                return o;
+            }
+            sampler2D  _CameraDepthTexture;
+            fixed4 frag(v2f i) : SV_Target{
+
+               // fixed4 col = _CameraDepthTexture.Sample(point_clamp_sampler,i.uv);
+               fixed4 col = SAMPLE_DEPTH_TEXTURE(_CameraDepthTexture,i.uv);
+                return float4(col.x,0,0,1);
+            }
+            
+
+            ENDCG
+            }
+        
+        
+        Pass{
+            
+         Blend one one
+          
+            CGPROGRAM
+            #pragma vertex vert
+            #pragma fragment frag
+
+          Texture2D Quarter;
+           sampler2D QuarterD;
+float4 Quarter_TexelSize;
+float4 QuarterD_TexelSize;
+float4 _MainTex_TexelSize;
+            float   _omegaspace , _omegatonal ;
+
+
+            struct outvert
+            {
+ float2 uv : TEXCOORD0;
+                float2 ray : TEXCOORD1;
+                float4 vertex : SV_POSITION;
+            float4  uv1 : TEXCOORD2;
+                float4  uv2 : TEXCOORD3;
+
+
+                
+            };
+
+
+
+            outvert vert (appdata v)
+            {
+                outvert o;
+                o.vertex = UnityObjectToClipPos(v.vertex);
+                o.uv = TRANSFORM_TEX(v.uv, _MainTex);
+
+                o.uv1 = float4(v.uv  - 0.5 * Quarter_TexelSize.xy,0,0);
+                o.uv1.zw = o.uv1.xy + float2(Quarter_TexelSize.x,0);
+                o.uv2.xy = o.uv1.xy  + float2(0,Quarter_TexelSize.y);
+                o.uv2.zw = o.uv1.xy + Quarter_TexelSize.xy;
+                o.ray =  v.Ray ;
+             
+                return o;
+            }
+            sampler2D  _CameraDepthTexture;
+
+
+
+
+float4   _Fcol;
+           
+             
+            fixed4 frag(outvert i) : SV_Target{
+
+                float2 uvs[4] ;
+                //get lower res uv
+                uvs[0] = i.uv1.xy;
+                uvs[1]= i.uv1.zw;
+                uvs[2]= i.uv2.xy;
+                uvs[3]= i.uv2.zw;
+                //get higher res depth
+                float samp = SAMPLE_DEPTH_TEXTURE(_CameraDepthTexture, i.uv).r;
+            
+            //used to get bilinear weights
+                 float2 ab = i.uv - uvs[0];
+                float weight[4] ={1-ab.x*1-ab.y, ab.x*1-ab.y,1-ab.x*ab.y, ab.x*ab.y};
+              
+                float depthdiff[4] ;
+                float cols[4] ;
+                float weighttotal = 0;
+                float nuweight[4];
+                float4 final= float4(0,0,0,1);
+                [unroll]
+                for ( int i = 0; i<4; i++)
+                {   //depth of lower res samples. get diffrence from higher res and make higher the close they are.
+                    depthdiff[i] = 1/ (0.00000000000001+(abs( samp-SAMPLE_DEPTH_TEXTURE(QuarterD, uvs[i]).r)));
+                    //get lower sample color
+                    cols[i] =  Quarter.Sample(point_clamp_sampler, uvs[i]);
+                    
+                    nuweight[i] = depthdiff[i] * weight[i];
+                    weighttotal += nuweight[i];
+                    
+                    
+                }
+                [unroll]
+                for (int j=0; j<4; j++)
+                {
+                    //normalize weight
+                    nuweight[j] /=  weighttotal;
+                    //scale by weights
+                    final += cols[j]*nuweight[j];
+                    
+                    
+                }
+               
+                
+return final*_Fcol;
+
+
+                
+                
+               
+                
             }
             
 
             ENDCG
             }
     }
-}
+    }
+    
+    
+    
+    
+    
+
