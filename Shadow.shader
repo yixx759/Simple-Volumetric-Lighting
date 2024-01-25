@@ -283,7 +283,8 @@ float inshadow(float3 worldpos)
             ENDCG
             }
         
-        
+        // Simpler Method found here: https://github.com/SlightlyMad/VolumetricLights/blob/master/Assets/Shaders/BilateralBlur.shader
+        // This method seems better but I wanted to be more accurate to the article.
         Pass{
             
          Blend one one
