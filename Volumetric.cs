@@ -26,8 +26,7 @@ public class Volumetric : MonoBehaviour
     
     
     
-    //redefine vert for last
-    //show alternative done by unity
+   
     
     
     
