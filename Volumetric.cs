@@ -21,12 +21,14 @@ public class Volumetric : MonoBehaviour
     [SerializeField ] private float _Phi;
     [SerializeField, Range(1,1000) ] private int _samples =20 ;
     [SerializeField ] private Color _Fcol = Vector4.one ;
+    [FormerlySerializedAs("te")] [SerializeField ] private bool Dither = false ;
   
 
     
     
     
-   
+    //redefine vert for last
+    //show alternative done by unity
     
     
     
@@ -55,23 +57,24 @@ public class Volumetric : MonoBehaviour
         {
              resolu = RenderTexture.GetTemporary(Screen.width, Screen.height);
              resolud = RenderTexture.GetTemporary(Screen.width, Screen.height);
-            
+             
         }
         else if (Downsamp == DownSample.Half)
         {
             resolu = RenderTexture.GetTemporary(Screen.width/2, Screen.height/2);
             resolud = RenderTexture.GetTemporary(Screen.width/2, Screen.height/2);
-        
+            
         }
         else
         {
             resolu = RenderTexture.GetTemporary(Screen.width/4, Screen.height/4);
            resolud = RenderTexture.GetTemporary(Screen.width/4, Screen.height/4);
-          
+           
         }
-       
 
-
+      
+        VolShader.SetInt("Dither" ,Convert.ToInt16(Dither) );
+      
         
        Graphics.Blit(source,resolu,VolShader,0);
       VolShader.SetTexture("Quarter" ,resolu );
@@ -79,6 +82,7 @@ public class Volumetric : MonoBehaviour
      Graphics.Blit(source,resolud, VolShader,3);
      VolShader.SetTexture("QuarterD" ,resolud );
     
+     
      Graphics.Blit(source,destination);
       
      Graphics.Blit(source,destination, VolShader, 4);
@@ -90,8 +94,8 @@ public class Volumetric : MonoBehaviour
 
       
     
-       resolu.Release();
-       resolud.Release();
+       RenderTexture.ReleaseTemporary(resolu);
+       RenderTexture.ReleaseTemporary(resolud);
         
     }
 }

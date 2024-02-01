@@ -72,13 +72,18 @@ Shader "Unlit/Shadow"
   
             
             sampler2D  _CameraDepthTexture,_ShadowCascade;
-            
+            float4 _MainTex_TexelSize;
             float4x4 InverseView;
             float4x4 InverseProj;
             int _samples;
+            bool Dither = false;
             float _Albedo, _Phi;
             
             
+          static  const float DitherPattern [4][4]= {0.0,0.5,0.125,0.625,
+                                    0.75,0.25,0.875,0.375,
+                                    0.1875,0.6875,0.0625,0.5625,
+                                    0.9375,0.4375,0.8125,0.3125};
             
 
             //Use world space co-ordinate to find if that position is in shadow
@@ -153,6 +158,7 @@ float inshadow(float3 worldpos)
                 //Checks if pixel is in shadow [For Testing]
               float shadowmask = inshadow(world);
 
+                
                 //Length of ray to march through from cam to object 
                 float max =  length(  _WorldSpaceCameraPos- world );
 
@@ -165,11 +171,23 @@ float inshadow(float3 worldpos)
                 
                 float3 x =_WorldSpaceCameraPos;
 
+                
+
                 //eye direction from cam to point
               float3  viewDir = normalize( world-_WorldSpaceCameraPos);
                 
             float3 L = float4(0,0,0,1);
-              
+                
+                
+                if(Dither)
+                {
+                    
+                    float div = DitherPattern[(i.uv.x*_MainTex_TexelSize.z)%4][(i.uv.y*_MainTex_TexelSize.w)%4];
+                    //offset starting position by matching fragment to matrix value;
+                     x += (viewDir *( s*div));
+                    
+                }
+                
            
              [loop]
              for(float l =0 ; l <  max; l += s) {
@@ -217,7 +235,7 @@ float inshadow(float3 worldpos)
             }
             fixed4 frag(v2f i ) : SV_Target{
 
-                fixed4 col = _MainTex.Sample(sampler_MainTex, i.uv);
+                fixed4 col = _MainTex.Sample(point_clamp_sampler, i.uv);
                 return col;
             }
             
@@ -298,7 +316,7 @@ float inshadow(float3 worldpos)
 float4 Quarter_TexelSize;
 float4 QuarterD_TexelSize;
 float4 _MainTex_TexelSize;
-            
+            float   _omegaspace , _omegatonal ;
 
 
             struct outvert
