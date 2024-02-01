@@ -21,14 +21,10 @@ public class Volumetric : MonoBehaviour
     [SerializeField ] private float _Phi;
     [SerializeField, Range(1,1000) ] private int _samples =20 ;
     [SerializeField ] private Color _Fcol = Vector4.one ;
+    //Use for dithering with texture
+  //  [SerializeField ] private Texture _Div ;
     [FormerlySerializedAs("te")] [SerializeField ] private bool Dither = false ;
   
-
-    
-    
-    
-    //redefine vert for last
-    //show alternative done by unity
     
     
     
@@ -74,14 +70,14 @@ public class Volumetric : MonoBehaviour
 
       
         VolShader.SetInt("Dither" ,Convert.ToInt16(Dither) );
+    //  VolShader.SetTexture("_Div", _Div);
       
-        
        Graphics.Blit(source,resolu,VolShader,0);
       VolShader.SetTexture("Quarter" ,resolu );
        
      Graphics.Blit(source,resolud, VolShader,3);
      VolShader.SetTexture("QuarterD" ,resolud );
-    
+     
      
      Graphics.Blit(source,destination);
       

@@ -72,7 +72,9 @@ Shader "Unlit/Shadow"
   
             
             sampler2D  _CameraDepthTexture,_ShadowCascade;
-            float4 _MainTex_TexelSize;
+           // sampler2D  _Div;
+            float4 _MainTex_TexelSize ;
+           // float4 _Div_TexelSize;
             float4x4 InverseView;
             float4x4 InverseProj;
             int _samples;
@@ -87,7 +89,7 @@ Shader "Unlit/Shadow"
             
 
             //Use world space co-ordinate to find if that position is in shadow
-float inshadow(float3 worldpos)
+            float inshadow(float3 worldpos)
             {
 
                 //Find what cascade the current world position is between
@@ -135,7 +137,7 @@ float inshadow(float3 worldpos)
             
             fixed4 frag (v2f i) : SV_Target
             {
-                
+               // return tex2D(_Div, (i.uv*_MainTex_TexelSize.zw)/4);
                 //Get screen Col
                 fixed4 col = _MainTex.Sample(sampler_MainTex, i.uv);
 
@@ -178,16 +180,22 @@ float inshadow(float3 worldpos)
                 
             float3 L = float4(0,0,0,1);
                 
-                
+           
                 if(Dither)
                 {
                     
-                    float div = DitherPattern[(i.uv.x*_MainTex_TexelSize.z)%4][(i.uv.y*_MainTex_TexelSize.w)%4];
+                  float div = DitherPattern[(i.uv.x*_MainTex_TexelSize.z)%4][(i.uv.y*_MainTex_TexelSize.w)%4];
+                  
+                    x += (viewDir *( s*div));
                     //offset starting position by matching fragment to matrix value;
-                     x += (viewDir *( s*div));
                     
                 }
+
+                    //This is the method used in the article but I believe the matrix gives a better result.
+                   //  div = tex2D(_Div, (i.uv*_MainTex_TexelSize.zw)/4);
                 
+                  
+                     
            
              [loop]
              for(float l =0 ; l <  max; l += s) {
