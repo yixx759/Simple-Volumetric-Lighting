@@ -21,10 +21,11 @@ public class Volumetric : MonoBehaviour
     [SerializeField ] private float _Phi;
     [SerializeField, Range(1,1000) ] private int _samples =20 ;
     [SerializeField ] private Color _Fcol = Vector4.one ;
-    //Use for dithering with texture
-  //  [SerializeField ] private Texture _Div ;
+    [SerializeField ] private float GaussianStandDev = 1.5f ;
+  
     [FormerlySerializedAs("te")] [SerializeField ] private bool Dither = false ;
   
+    
     
     
     
@@ -33,6 +34,8 @@ public class Volumetric : MonoBehaviour
         print(VolShader.passCount);
         Downsamp = assighn;
     }
+
+
 
     private void OnRenderImage(RenderTexture source, RenderTexture destination)
     {
@@ -49,49 +52,62 @@ public class Volumetric : MonoBehaviour
 
         RenderTexture resolu;
         RenderTexture resolud;
+        RenderTexture resolua;
         if (Downsamp == DownSample.Full)
         {
              resolu = RenderTexture.GetTemporary(Screen.width, Screen.height);
+            
              resolud = RenderTexture.GetTemporary(Screen.width, Screen.height);
+             resolua = RenderTexture.GetTemporary(Screen.width, Screen.height);
+            
              
         }
         else if (Downsamp == DownSample.Half)
         {
             resolu = RenderTexture.GetTemporary(Screen.width/2, Screen.height/2);
             resolud = RenderTexture.GetTemporary(Screen.width/2, Screen.height/2);
+            resolua = RenderTexture.GetTemporary(Screen.width/2, Screen.height/2);
             
         }
         else
         {
             resolu = RenderTexture.GetTemporary(Screen.width/4, Screen.height/4);
            resolud = RenderTexture.GetTemporary(Screen.width/4, Screen.height/4);
+           resolua = RenderTexture.GetTemporary(Screen.width/4, Screen.height/4);
            
         }
+        resolu.filterMode = FilterMode.Point;
+        resolua.filterMode = FilterMode.Point;
+        resolud.filterMode = FilterMode.Point;
+        source.filterMode = FilterMode.Point;
+       VolShader.SetInt("Dither" ,Convert.ToInt16(Dither) );
+       VolShader.SetFloat("_sd",GaussianStandDev);
+    
 
-      
-        VolShader.SetInt("Dither" ,Convert.ToInt16(Dither) );
-    //  VolShader.SetTexture("_Div", _Div);
-      
-       Graphics.Blit(source,resolu,VolShader,0);
-      VolShader.SetTexture("Quarter" ,resolu );
-       
-     Graphics.Blit(source,resolud, VolShader,3);
-     VolShader.SetTexture("QuarterD" ,resolud );
-     
-     
+    
+        Graphics.Blit(source,resolud, VolShader,3);
+        VolShader.SetTexture("QuarterD" ,resolud );
+        Graphics.Blit(source,resolua);
+        Graphics.Blit(resolua,resolu,VolShader,0);
+        
+
+
+   
      Graphics.Blit(source,destination);
-      
-     Graphics.Blit(source,destination, VolShader, 4);
-           
-           
+     Graphics.Blit(resolu,resolua,VolShader,5);
+        Graphics.Blit(resolua,resolu,VolShader,6);
+        VolShader.SetTexture("Quarter" ,resolu );
+        
      
-     
-      
+        Graphics.Blit(source,destination,VolShader,4);
+        
+   
+    
 
-      
     
        RenderTexture.ReleaseTemporary(resolu);
        RenderTexture.ReleaseTemporary(resolud);
+       RenderTexture.ReleaseTemporary(resolua);
         
     }
 }

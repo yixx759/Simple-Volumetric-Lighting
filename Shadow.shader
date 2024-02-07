@@ -3,6 +3,7 @@ Shader "Unlit/Shadow"
     Properties
     {
         _MainTex ("Texture", 2D) = "white" {}
+         
         
       
     }
@@ -57,26 +58,32 @@ Shader "Unlit/Shadow"
          
            #define TAU 6.28318
            #define PI 3.14159
-          
+
+
+            
+           sampler2D  _CameraDepthTexture,_ShadowCascade, QuarterD;
+
+              float4 QuarterD_ST;
              v2f vert (appdata v)
             {
                 v2f o;
                 o.vertex = UnityObjectToClipPos(v.vertex);
                 o.uv = TRANSFORM_TEX(v.uv, _MainTex);
-              
-                o.ray =  v.Ray ;
+                
+                o.ray =  TRANSFORM_TEX(v.uv, QuarterD) ;
              
                 return o;
             }
          
   
             
-            sampler2D  _CameraDepthTexture,_ShadowCascade;
+           
            // sampler2D  _Div;
             float4 _MainTex_TexelSize ;
            // float4 _Div_TexelSize;
             float4x4 InverseView;
             float4x4 InverseProj;
+          
             int _samples;
             bool Dither = false;
             float _Albedo, _Phi;
@@ -142,7 +149,10 @@ Shader "Unlit/Shadow"
                 fixed4 col = _MainTex.Sample(sampler_MainTex, i.uv);
 
                 //Get the depth of object from camera to conver to world
-                float CamDeep = SAMPLE_DEPTH_TEXTURE(_CameraDepthTexture, i.uv).r;
+
+                //DownSample
+                float CamDeep = SAMPLE_DEPTH_TEXTURE(QuarterD, i.uv).r;
+             //   float CamDeep = SAMPLE_DEPTH_TEXTURE(_CameraDepthTexture, i.uv).r;
 
                 //put in range of -1 to 1
              i.ray =  i.ray*2-1;
@@ -185,7 +195,8 @@ Shader "Unlit/Shadow"
                 {
                     
                   float div = DitherPattern[(i.uv.x*_MainTex_TexelSize.z)%4][(i.uv.y*_MainTex_TexelSize.w)%4];
-                  
+
+                    //sometimes + causes errors so - might be better
                     x += (viewDir *( s*div));
                     //offset starting position by matching fragment to matrix value;
                     
@@ -271,7 +282,8 @@ Shader "Unlit/Shadow"
             }
             fixed4 frag(v2f i) : SV_Target{
 
-                fixed4 col = _MainTex.Sample(point_clamp_sampler, i.uv);
+               // fixed4 col = _MainTex.Sample(point_clamp_sampler, i.uv);
+                fixed4 col = _MainTex.Sample(sampler_MainTex, i.uv);
                 return col;
             }
             
@@ -313,7 +325,7 @@ Shader "Unlit/Shadow"
         // This method seems better but I wanted to be more accurate to the article.
         Pass{
             
-         Blend one one
+        Blend one one
           
             CGPROGRAM
             #pragma vertex vert
@@ -325,6 +337,7 @@ float4 Quarter_TexelSize;
 float4 QuarterD_TexelSize;
 float4 _MainTex_TexelSize;
             float   _omegaspace , _omegatonal ;
+            bool _Bilat;
 
 
             struct outvert
@@ -340,7 +353,8 @@ float4 _MainTex_TexelSize;
             };
 
 
-
+            //adjust for quarter in final ver
+             
             outvert vert (appdata v)
             {
                 outvert o;
@@ -398,16 +412,27 @@ float4   _Fcol;
                 [unroll]
                 for (int j=0; j<4; j++)
                 {
-                    //normalize weight
-                    nuweight[j] /=  weighttotal;
+                  
+                
                     //scale by weights
                     final += cols[j]*nuweight[j];
                     
                     
                 }
-               
+
+
+                  //normalize weight
+final/= weighttotal;
+            //Remove 
                 
-return final*_Fcol;
+             
+
+               
+               
+                return final*_Fcol;
+                    
+              
+
 
 
                 
@@ -419,6 +444,192 @@ return final*_Fcol;
 
             ENDCG
             }
+        
+        
+        Pass{
+            
+            CGPROGRAM
+
+            #pragma vertex vert
+            #pragma fragment frag
+            
+           
+            
+            float gaussian(float x, float StanDev)
+            {
+
+              return (1/sqrt(TAU*(StanDev*StanDev)))*exp(-((x*x)/(2*(StanDev*StanDev))));
+                
+                
+            }
+
+float4 _MainTex_TexelSize ;
+
+ float _sd;
+            
+            v2f vert(appdata v)
+            {
+
+                v2f o;
+                o.vertex = UnityObjectToClipPos(v.vertex);
+                o.uv = TRANSFORM_TEX(v.uv, _MainTex);
+              
+                o.ray =  v.Ray ;
+             
+                return o;
+
+
+                
+            }
+            Texture2D Quarter;
+           sampler2D QuarterD;
+float4 Quarter_TexelSize;
+
+            fixed4 frag(v2f i) : SV_Target
+            {
+               
+
+            
+                  float4 color ;
+                float weight ;
+                float totalw =0;
+                float4 totalc =0;
+                 float p = i.uv.x- (_MainTex_TexelSize.x*3);
+               
+                   float samp = SAMPLE_DEPTH_TEXTURE(QuarterD, i.uv);
+
+
+                //Horizontal Gaussian Blur
+                //Get weights from gaussian distribution then scales from depth diff
+                //devide by total to normalize
+                
+                [unroll]
+                for(int il= 0; il < 7; il++ )
+                {
+                    weight = gaussian(abs((p-i.uv.x)),_sd) * 1/ (0.000001+(abs( samp-SAMPLE_DEPTH_TEXTURE(QuarterD, float2(p,i.uv.y)).r)));;
+                    
+                    totalw +=  weight;
+                    color = _MainTex.Sample(point_clamp_sampler, float2(p,i.uv.y));;
+                    totalc += color *  weight;
+                    
+                    
+                    p = p + _MainTex_TexelSize.x;
+                    
+                    
+
+                    
+                }
+
+return totalc / totalw;
+
+
+                   }
+            
+
+
+            ENDCG
+            
+            
+            
+            
+            
+            }
+        
+        
+        Pass{
+            
+            CGPROGRAM
+
+            #pragma vertex vert
+            #pragma fragment frag
+            
+           
+            
+            float gaussian(float x, float StanDev)
+            {
+
+              return (1/sqrt(TAU*(StanDev*StanDev)))*exp(-((x*x)/(2*(StanDev*StanDev))));
+                
+                
+            }
+sampler2D QuarterD;
+float4 _MainTex_TexelSize ;
+
+ float _sd;
+            
+            v2f vert(appdata v)
+            {
+
+                v2f o;
+                o.vertex = UnityObjectToClipPos(v.vertex);
+                o.uv = TRANSFORM_TEX(v.uv, _MainTex);
+              
+                o.ray =  v.Ray ;
+             
+                return o;
+
+
+                
+            }
+            Texture2D Quarter;
+            
+           
+float4 Quarter_TexelSize;
+
+            fixed4 frag(v2f i) : SV_Target
+            {
+               
+
+               
+               
+                float4 colour ;
+                float weight ;
+                float totalw =0;
+                float4 totalc =0;
+                 float samp = SAMPLE_DEPTH_TEXTURE(QuarterD, i.uv);
+                float p = i.uv.y- (_MainTex_TexelSize.y*3);
+
+
+
+                 //Vertical Gaussian Blur
+                //Get weights from gaussian distribution then scales from depth diff
+                //devide by total to normalize
+
+
+                
+                [unroll]
+                for(int il= 0; il < 7; il++ )
+                {
+                    weight = gaussian(abs((p-i.uv.y)),_sd) * 1/ (0.000001+(abs( samp-SAMPLE_DEPTH_TEXTURE(QuarterD, float2(i.uv.x,p)).r)));;
+                    
+                    totalw +=  weight;
+                    colour = _MainTex.Sample(point_clamp_sampler, float2(i.uv.x,p));;
+                    totalc += colour *  weight;
+                    
+                    
+                    p = p + _MainTex_TexelSize.y;
+                    
+                    
+
+                    
+                }
+
+return totalc / totalw;
+
+
+                   }
+            
+
+
+            ENDCG
+            
+            
+            
+            
+            
+            }
+        
+        
     }
     }
     
