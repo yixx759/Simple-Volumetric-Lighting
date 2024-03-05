@@ -3,6 +3,7 @@ Shader "Unlit/Shadow"
     Properties
     {
         _MainTex ("Texture", 2D) = "white" {}
+        scat ("scatter", float) = 1
          
         
       
@@ -17,7 +18,7 @@ Shader "Unlit/Shadow"
 
             #include "UnityCG.cginc"
             #define TAU 6.283185307
-          
+          #include "UnityDeferredLibrary.cginc"
             #include "AutoLight.cginc"
             struct appdata
             {
@@ -31,6 +32,7 @@ Shader "Unlit/Shadow"
             {
                 float2 uv : TEXCOORD0;
                 float2 ray : TEXCOORD1;
+                float2 ahhhh : TEXCOORD2;
                 float4 vertex : SV_POSITION;
                
                
@@ -61,7 +63,7 @@ Shader "Unlit/Shadow"
 
 
             
-           sampler2D  _CameraDepthTexture,_ShadowCascade, QuarterD;
+           sampler2D _ShadowCascade, QuarterD;
 
               float4 QuarterD_ST;
              v2f vert (appdata v)
@@ -146,6 +148,10 @@ Shader "Unlit/Shadow"
             {
                // return tex2D(_Div, (i.uv*_MainTex_TexelSize.zw)/4);
                 //Get screen Col
+
+
+
+                
                 fixed4 col = _MainTex.Sample(sampler_MainTex, i.uv);
 
                 //Get the depth of object from camera to conver to world
@@ -167,6 +173,8 @@ Shader "Unlit/Shadow"
                 //Convert to world from view
                 float3 world = mul(InverseView, float4(viewr,1));
 
+                
+                
                 //Checks if pixel is in shadow [For Testing]
               float shadowmask = inshadow(world);
 
@@ -309,7 +317,7 @@ Shader "Unlit/Shadow"
              
                 return o;
             }
-            sampler2D  _CameraDepthTexture;
+           // sampler2D  _CameraDepthTexture;
             fixed4 frag(v2f i) : SV_Target{
 
                // fixed4 col = _CameraDepthTexture.Sample(point_clamp_sampler,i.uv);
@@ -369,7 +377,7 @@ float4 _MainTex_TexelSize;
              
                 return o;
             }
-            sampler2D  _CameraDepthTexture;
+         //   sampler2D  _CameraDepthTexture;
 
 
 
@@ -628,6 +636,323 @@ return totalc / totalw;
             
             
             }
+        Pass
+        {
+            CGPROGRAM
+            #pragma vertex vert
+            #pragma fragment frag
+            // make fog work
+      
+
+            
+         
+           #define TAU 6.28318
+           #define PI 3.14159
+
+ static  const float DitherPattern [4][4]= {0.0,0.5,0.125,0.625,
+                                    0.75,0.25,0.875,0.375,
+                                    0.1875,0.6875,0.0625,0.5625,
+                                    0.9375,0.4375,0.8125,0.3125};
+            
+           sampler2D  _ShadowCascade, QuarterD;
+
+            float4 PLightPos, PLightDir, PTestPos;
+            float Theta, Range,scat;
+            float consta, lin,quad;
+            float4x4 InverseView;
+            float4x4 InverseProj;
+            float4x4 _unity_WorldToShadow,_unity_WorldToShadown;
+
+              float4 QuarterD_ST;
+
+
+           
+
+
+
+            
+             v2f vert (appdata v)
+            {
+                v2f o;
+                o.vertex = UnityObjectToClipPos(v.vertex);
+                 
+                o.uv = TRANSFORM_TEX(v.uv, _MainTex);
+                
+                o.ray =  TRANSFORM_TEX(v.uv, QuarterD);
+               
+                 
+             
+                return o;
+            }
+
+float inverse(float v, float a, float b)
+             {
+                return (v-a)/(b-a);
+
+
+                 
+             }
+
+            
+        float3 inshadow(float3 worldpos)
+            {
+
+            
+                
+                float4 shadowCoord0 = mul(_unity_WorldToShadow, float4(worldpos.xyz,1.0)); 
+             
+            
+            float3 coord = (shadowCoord0.xyz/shadowCoord0.w);
+           
+        float3 ca =  coord;
+                 
+                 ca.xy = 1-ca.xy;
+           
+         float shadowmask = SAMPLE_DEPTH_TEXTURE(_ShadowCascade, ca.xy).x; ;
+                 //shadow cascade black around and do z
+            if(ca.x >=1 || ca.x <=0  || ca.y >=1 || ca.y <=0 ){return 0;}
+
+
+                 
+        
+
+                 
+           shadowmask = shadowmask <= (coord.z+0.0001);
+
+                 
+      
+        return shadowmask;
+            return  coord.z;
+       
+
+
+
+                
+            }
+
+ float4 _MainTex_TexelSize ;
+        
+          
+            int _samples;
+            bool Dither = false;
+            float _Albedo, _Phi, outer, inner;
+    float Henyey( float g, float costheta)
+            {
+                float gsqr = g*g;
+               float newval =  (1.0-gsqr)/(4*PI*pow(1.0+gsqr-(2.0*g)*costheta,3/2));
+                return newval;
+                
+            }
+            
+  fixed4 frag (v2f i) : SV_Target
+          {
+
+              float depth = SAMPLE_DEPTH_TEXTURE(QuarterD, i.ray).r;
+           
+            float4 pos = float4((i.ray *2-1).xy,depth,1);
+
+              float4 newproj = mul(InverseProj, pos);
+
+             float3 newproja = newproj.xyz/newproj.w;
+
+              float4 world = mul(InverseView, float4(newproja,1));
+
+
+
+              //Finds where the ray enters and exits cone
+              //some edge cases eg camera in cone
+//https://lousodrome.net/blog/light/2017/01/03/intersection-of-a-ray-and-a-cone/
+                float3 o = _WorldSpaceCameraPos;
+ float3  viewDir = normalize( world-_WorldSpaceCameraPos);
+              float3 d = viewDir;
+              float3 ca = PLightPos;
+                float3 v = PLightDir;
+                float3 co = o-ca;
+
+              float cost =  (Theta);
+              float dotdv = dot(d, v);
+              float dotcov = dot(co, v);
+
+           
+              
+
+       float a = (dotdv * dotdv) - cost * cost;
+        float b = 2 * (dotdv * dotcov - dot(d, co * (cost * cost)));
+         float c = (dotcov * dotcov) - dot(co, co * (cost * cost));
+
+       float determ = (b * b) - 4 * a * c;
+
+        float3 endP;
+        float3 startP;
+              float posi = ((-b + sqrt(determ)) / (2 * a));
+              float negi = ((-b - sqrt(determ)) / (2 * a));
+             float wo = length(world - o);  
+         if (determ < 0)
+         {
+             
+            return float4(0,0,0,1);
+             
+         }
+              if (determ == 0)
+         {
+             
+             endP  = o+(-b/(2*a))*d;
+             startP = o+(-b/(2*a))*d;
+             
+         }
+       else if (determ >0)
+     {
+           float t = max((negi), (posi));
+           float t1 = min((negi), (posi));
+
+             if (t < 0)
+             {
+            
+                   return float4(0,0,0,1);
+             }
+
+           float3 s = o+t1*d;
+           float3 e = o+t*d;
+
+         
+         
+
+               if(t > wo)
+           {
+              
+                 if(t1 > wo)
+           {
+                            
+              
+               return float4(0,0,0,1);
+           }
+                 
+                e = world;
+              
+            
+                   
+               
+           
+           } 
+           
+
+           
+             if (dot(normalize(co), v) < cost)
+             {
+                   if(t1 < 0 )
+                   {
+                    startP = e;
+                     endP = world;
+
+                       
+                   }
+                   else
+                   {
+                      startP = s;
+                 endP = e; 
+                   }
+                    
+               
+
+             }
+             else
+             {
+               
+                  if(dot(normalize((o+((t))*d) - ca), v) >= cost-0.001)
+                  {
+                startP = o;
+                 endP = e;
+                      
+                 
+                      
+                  }else
+                  {
+            if(t1 > wo)
+           {
+                            
+               s = world;
+           
+           }
+                       
+                          startP = o;
+                             endP = s;
+                 
+             
+                      
+                  }
+                 
+             }
+       
+         
+            }
+
+   
+              
+            
+                
+              
+               float max =  length(  startP- endP );
+            
+             
+              
+               float3 x = startP;
+              
+
+
+
+
+             float  sa = max / _samples;
+
+             
+                
+            float3 L = float4(0,0,0,1);
+                
+            
+                if(Dither)
+                {
+                    
+                  float div = DitherPattern[(i.uv.x*_MainTex_TexelSize.z)%4][(i.uv.y*_MainTex_TexelSize.w)%4];
+                   
+                    //sometimes + causes errors so - might be better
+                    x += (viewDir *( sa*div));
+                    //offset starting position by matching fragment to matrix value;
+                    
+                }
+            
+                  
+             [loop]
+             for(float l =0 ; l <  max; l += sa)
+             {
+                 //March to new point in world space.
+                 x += viewDir * sa;
+
+                 //Attenuation fades as it goes on.
+                float attenuationpos = (length(x- PLightPos));
+                float atten = (1/((consta)+(lin*attenuationpos)+(dot(attenuationpos,attenuationpos)*quad)));
+          
+                 float v = inshadow(x);
+
+               float Li = Henyey(_Albedo, dot(viewDir, normalize((PLightPos-x))))*scat*v*atten;
+        
+                 
+              
+                 L +=  Li*_Phi;
+            
+                 
+                 
+             }
+L = L/_samples;
+
+
+              
+return float4( L,1);
+
+          }
+            
+          
+      
+            ENDCG
+        }
         
         
     }
