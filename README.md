@@ -1,5 +1,6 @@
 # Simple-Volumetric-Lighting
 
+Major Bug needs Fixed
 [WIP] ~~Basic RayMarch~~ -> ~~Low Res Rendering~~ -> ~~Bilateral Upsampling~~ -> ~~Dithering~~ -> ~~Bilateral Gaussian Blur~~ -> Non-Directional Lights(Spot done now doing point) -> Compute Shader Ver.
 
 Implementation of GPU PRO 5 article on "Volumetric Light Effects in Killzone: Shadow Fall". 
