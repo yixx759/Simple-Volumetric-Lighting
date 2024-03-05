@@ -129,15 +129,16 @@ public class Volumetric : MonoBehaviour
      {
           
          //Manual
-         //    Vector3 w = Vector3.Normalize((_dePoint.transform.forward+_dePoint.transform.position) - _dePoint.transform.position);
-         //    Vector3 u = Vector3.Normalize( Vector3.Cross(w,_dePoint.transform.up));
-         //    Vector3 v = Vector3.Cross(w,u);
-         //    Vector4 col1 = new Vector4(u.x, v.x, w.x,0 );
-         //    Vector4 col2 = new Vector4(u.y, v.y, w.y,0 );
-         //    Vector4 col3 = new Vector4(u.z, v.z, w.z,0) ;
-         //    Vector4 col4 = new Vector4(Vector3.Dot(-_dePoint.transform.position,u),Vector3.Dot(-_dePoint.transform.position,v),Vector3.Dot(-_dePoint.transform.position,w),1);
-         // Matrix4x4 ma = new Matrix4x4(col1, col2, col3, col4);
-         Matrix4x4 ma = Matrix4x4.TRS(pos, _dePoint.transform.rotation,Vector3.one).inverse;
+         Vector3 w = Vector3.Normalize((_dePoint.transform.forward+_dePoint.transform.position) - _dePoint.transform.position);
+         Vector3 u = Vector3.Normalize( Vector3.Cross(w,_dePoint.transform.up));
+         Vector3 v = Vector3.Cross(w,u);
+        Vector4 col1 = new Vector4(u.x, v.x, w.x,0 );
+         Vector4 col2 = new Vector4(u.y, v.y, w.y,0 );
+         Vector4 col3 = new Vector4(u.z, v.z, w.z,0) ;
+         Vector4 col4 = new Vector4(Vector3.Dot(-_dePoint.transform.position,u),Vector3.Dot(-_dePoint.transform.position,v),Vector3.Dot(-_dePoint.transform.position,w),1);
+         Matrix4x4 ma = new Matrix4x4(col1, col2, col3, col4);
+         //This one seems to be less acurate
+        // Matrix4x4 ma = Matrix4x4.TRS(pos, _dePoint.transform.rotation,Vector3.one).inverse;
      
      
          float n = _dePoint.shadowNearPlane;
