@@ -920,9 +920,12 @@ float inverse(float v, float a, float b)
                 }
             
                   
+            
+                  int li =0;
              [loop]
-             for(float l =0 ; l <  max; l += sa)
+             for(float l =0 ; l <  max&& li < 1000; l += sa)
              {
+                 ++li;
                  //March to new point in world space.
                  x += viewDir * sa;
 
@@ -932,6 +935,7 @@ float inverse(float v, float a, float b)
           
                  float v = inshadow(x);
 
+               //float Li = Henyey(_Albedo, dot(viewDir, normalize((PLightPos-x))))*scat*v*atten;
                float Li = Henyey(_Albedo, dot(viewDir, normalize((PLightPos-x))))*scat*v*atten;
         
                  
@@ -941,6 +945,7 @@ float inverse(float v, float a, float b)
                  
                  
              }
+
 L = L/_samples;
 
 
