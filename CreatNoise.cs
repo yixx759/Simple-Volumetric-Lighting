@@ -49,7 +49,7 @@ public class CreatNoise : MonoBehaviour
         
         c.Dispatch(0, 1920/8,1080/8,1);
         
-        
+        //dosnt work has to be converted to Texture 3D but you can feed r into a shader directly
         AssetDatabase.CreateAsset(r, "Assets/FogVolume.asset");
         
     }
