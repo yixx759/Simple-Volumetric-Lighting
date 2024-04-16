@@ -1,0 +1,91 @@
+// Each #kernel tells which function to compile; you can have many kernels
+#pragma kernel CSMain
+
+// Create a RenderTexture with enableRandomWrite flag and set it
+// with cs.SetTexture
+RWTexture3D<float4> Result;
+
+float persistance = 0.5;
+float amp = 1;
+float freq = 8;
+float freqchange = 2;
+float seed = 2;
+int octaves = 4;
+float2 offset = float2(0,0);
+
+
+float2 random (float2 uv )
+{
+                
+                
+  
+    float x = dot(uv, float2(123.4, 234.5));
+    float y = dot(uv, float2(234.5, 345.6));
+    float2 gradient = float2(x,y);
+    
+   
+   // return sin(sin(gradient* 46728.5453)) ;
+    return sin(sin(gradient* 43758.5453+seed)) ;
+}
+
+
+[numthreads(8,8,16)]
+void CSMain (uint3 id : SV_DispatchThreadID)
+{
+
+    seed = seed*100*id.z;
+    float result = 0;
+   
+    float2 nuid = (float2) id.xy+offset;
+    nuid = nuid / float2(1920, 1080);
+
+//do minus way
+    
+    for (int i =0; i< octaves; i++)
+    {
+        
+       
+        float2 remapid = nuid * (freq);
+
+        float2 fracval = frac(remapid);
+
+        float2 bottomleft = floor(remapid);
+        float2 topleft = floor(remapid) + float2(0,1);
+        float2 bottomright = floor(remapid)+ float2(1,0);;
+        float2 topright = floor(remapid)+ float2(1,1);
+
+
+        float2 a = random(bottomleft);
+        float2 b = random(topleft);
+        float2 c = random(bottomright);
+        float2 d = random(topright);
+
+        float A = dot(a, fracval - float2(0,0));
+        float B = dot(b, fracval -float2(0,1));
+        float C = dot(c, fracval -float2(1,0));
+        float D = dot(d, fracval -float2(1,1));
+    
+        float2 ay= fracval * fracval * fracval * ( fracval * ( fracval * 6.0 - 15.0 ) + 10.0 );
+        // float2 ay= fracval * fracval * fracval*fracval ;
+        // float2 ay= fracval ;
+        // TODO: insert actual code here!
+
+        // Result[id.xy] = lerp(lerp(A,C,ay.y),lerp(B,D,ay.y),ay.x);
+    
+        result += (lerp(lerp(A,C,ay.x),lerp(B,D,ay.x),ay.y)) * amp;
+
+        amp *= persistance;
+        freq *= freqchange;
+        
+        
+    }
+   
+
+    result = clamp(result , -1, 1);
+    result = result *0.5 +0.7;
+    
+  // Result[id.xy] = frac(nuid.x/5);
+   Result[id.xyz] = result;
+    
+   
+}
