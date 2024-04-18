@@ -88,7 +88,8 @@ Shader "Unlit/Shadow"
           
             int _samples;
             bool Dither = false;
-            float _Albedo, _Phi;
+            float _Albedo, _Phi, _Scale;
+            sampler3D noise;
             
             
           static  const float DitherPattern [4][4]= {0.0,0.5,0.125,0.625,
@@ -173,8 +174,12 @@ Shader "Unlit/Shadow"
                 //Convert to world from view
                 float3 world = mul(InverseView, float4(viewr,1));
 
+//float noisesamp = tex3D(noise , frac(world*_Scale+(_Time.y*0.5)) ).r;
+               //  noisesamp= saturate(noisesamp*0.5+0.5);
+              //  return noisesamp*_Phi;
+
                 
-                
+             //   return noisesamp*_Phi;
                 //Checks if pixel is in shadow [For Testing]
               float shadowmask = inshadow(world);
 
@@ -197,7 +202,8 @@ Shader "Unlit/Shadow"
               float3  viewDir = normalize( world-_WorldSpaceCameraPos);
                 
             float3 L = float4(0,0,0,1);
-                
+                 float3 nodiv = x;
+                 nodiv += (viewDir *( s*0.5));
            
                 if(Dither)
                 {
@@ -212,15 +218,27 @@ Shader "Unlit/Shadow"
 
                     //This is the method used in the article but I believe the matrix gives a better result.
                    //  div = tex2D(_Div, (i.uv*_MainTex_TexelSize.zw)/4);
-                
-                  
-                     
+
+
+
+             
            
              [loop]
              for(float l =0 ; l <  max; l += s) {
+
+                 
                  //March to new point in world space.
                 x += viewDir * s;
+                 nodiv += viewDir * s;
+             //   float noisesamp = tex3Dlod(noise , float4((float3(i.uv.xy, 1)*_Scale).xyz,0)+_Time.y*0.05 ).r;
+
+
                  
+                 //wip
+ float noisesamp = tex3Dlod(noise , float4(float3(nodiv.xyz*_Scale).xyz,0)+_Time.y*0.05  ).r;
+                
+                 //noisesamp= saturate(noisesamp*0.5+0.5);
+                 noisesamp= saturate(noisesamp);
                  //Check if this point in world space is in shadow
                 float v = inshadow(x);
 
@@ -228,9 +246,13 @@ Shader "Unlit/Shadow"
                  float Li = Henyey(_Albedo, dot(viewDir, _WorldSpaceLightPos0))*v;
                  
                  //Add color
-                 L +=  Li*_Phi;
+                 L +=  Li*_Phi*(noisesamp);
+              
+            
+                //L +=  Li*_Phi;
             }
-                L = L/_samples;
+              
+               L = L/_samples;
              
                  return float4( L,1);
           
@@ -852,7 +874,7 @@ float inverse(float v, float a, float b)
                  endP = e; 
                    }
                     
-               
+               //return float4(1,0,0,1);
 
              }
              else
@@ -919,11 +941,9 @@ float inverse(float v, float a, float b)
                     
                 }
             
-                  
-            
                   int li =0;
              [loop]
-             for(float l =0 ; l <  max&& li < 1000; l += sa)
+             for(float l =0 ; l <  max&& li < 900; l += sa)
              {
                  ++li;
                  //March to new point in world space.
@@ -945,7 +965,13 @@ float inverse(float v, float a, float b)
                  
                  
              }
-
+            //
+            // if(li > 99)
+            // {
+            //
+            //     return float4(1,0,1,1);
+            // }
+              
 L = L/_samples;
 
 
@@ -967,4 +993,3 @@ return float4( L,1);
     
     
     
-
