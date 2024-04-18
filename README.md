@@ -1,6 +1,7 @@
 # Simple-Volumetric-Lighting
 
 [WIP] ~~Basic RayMarch~~ -> ~~Low Res Rendering~~ -> ~~Bilateral Upsampling~~ -> ~~Dithering~~ -> ~~Bilateral Gaussian Blur~~ -> Non-Directional Lights(Spot done now doing point) -> Compute Shader Ver. (Added 3d Fractal noise generator to be sampled for fog)
+Added very early fog support but needs optimzing and look improvement.
 
 Implementation of GPU PRO 5 article on "Volumetric Light Effects in Killzone: Shadow Fall". 
 ![VOL2](https://github.com/yixx759/Simple-Volumetric--Lighting/assets/126923383/f3b9127a-5cb9-4f32-b570-917d18a069c2)
