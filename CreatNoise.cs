@@ -32,7 +32,7 @@ public class CreatNoise : MonoBehaviour
 
     }
     
-    //credit this 
+    //https://forum.unity.com/threads/save-a-3d-render-texture-to-file.1204267/
     void SaveRT3DToTexture3DAsset(RenderTexture rt3D, string pathWithoutAssetsAndExtension)
     {
         int width = rt3D.width, height = rt3D.height, depth = rt3D.volumeDepth;
