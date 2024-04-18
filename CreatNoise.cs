@@ -1,7 +1,10 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
+using Unity.Collections;
 using UnityEngine;
 using UnityEngine.Rendering;
+using UnityEngine.Experimental.Rendering;
 using UnityEditor;
 
 public class CreatNoise : MonoBehaviour
@@ -17,13 +20,41 @@ public class CreatNoise : MonoBehaviour
     [SerializeField] float seed = 2;
     [SerializeField] int octaves = 4;
     [SerializeField] private Vector2 offset = Vector2.zero;
+    [SerializeField] private int n =6;
 
+    struct fourbytes
+    {
+        private Byte one;
+        private Byte two;
+        private Byte three;
+        private Byte four;
+        
+
+    }
     
-    
+    //credit this 
+    void SaveRT3DToTexture3DAsset(RenderTexture rt3D, string pathWithoutAssetsAndExtension)
+    {
+        int width = rt3D.width, height = rt3D.height, depth = rt3D.volumeDepth;
+        var a = new NativeArray<fourbytes>(width * height * depth, Allocator.Persistent, NativeArrayOptions.UninitializedMemory); //change if format is not 8 bits (i was using R8_UNorm) (create a struct with 4 bytes etc)
+        AsyncGPUReadback.RequestIntoNativeArray(ref a, rt3D, 0, (_) =>
+        {
+           // Texture3D output = new Texture3D(width, height, depth, rt3D.graphicsFormat, false);
+           Texture3D output = new Texture3D(width, height, depth, TextureFormat.RGBA32, false);
+            output.SetPixelData(a, 0);
+            output.Apply(updateMipmaps: false, makeNoLongerReadable: true);
+            AssetDatabase.CreateAsset(output, $"Assets/{pathWithoutAssetsAndExtension}.asset");
+            AssetDatabase.SaveAssetIfDirty(output);
+            a.Dispose();
+            rt3D.Release();
+        });
+    }
     // Start is called before the first frame update
     void Start()
     {
        
+        
+
         
         
         //set var
@@ -48,9 +79,9 @@ public class CreatNoise : MonoBehaviour
         c.SetVector("offset", offset);
         
         c.Dispatch(0, 1920/8,1080/8,1);
-        
-        //dosnt work has to be converted to Texture 3D but you can feed r into a shader directly
-        AssetDatabase.CreateAsset(r, "Assets/FogVolume.asset");
+
+        SaveRT3DToTexture3DAsset(r, "FogVolume");
+      //  AssetDatabase.CreateAsset(r, "Assets/FogVolume.asset");
         
     }
 
