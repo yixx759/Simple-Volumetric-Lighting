@@ -20,7 +20,7 @@ public class CreatNoise : MonoBehaviour
     [SerializeField] float seed = 2;
     [SerializeField] int octaves = 4;
     [SerializeField] private Vector2 offset = Vector2.zero;
-    [SerializeField] private int n =6;
+
 
     struct fourbytes
     {
@@ -32,7 +32,7 @@ public class CreatNoise : MonoBehaviour
 
     }
     
-    //https://forum.unity.com/threads/save-a-3d-render-texture-to-file.1204267/
+    //credit this 
     void SaveRT3DToTexture3DAsset(RenderTexture rt3D, string pathWithoutAssetsAndExtension)
     {
         int width = rt3D.width, height = rt3D.height, depth = rt3D.volumeDepth;
@@ -40,7 +40,7 @@ public class CreatNoise : MonoBehaviour
         AsyncGPUReadback.RequestIntoNativeArray(ref a, rt3D, 0, (_) =>
         {
            // Texture3D output = new Texture3D(width, height, depth, rt3D.graphicsFormat, false);
-           Texture3D output = new Texture3D(width, height, depth, TextureFormat.RGBA32, false);
+           Texture3D output = new Texture3D(width, height, depth, TextureFormat.BC4, false);
             output.SetPixelData(a, 0);
             output.Apply(updateMipmaps: false, makeNoLongerReadable: true);
             AssetDatabase.CreateAsset(output, $"Assets/{pathWithoutAssetsAndExtension}.asset");
@@ -80,7 +80,7 @@ public class CreatNoise : MonoBehaviour
         
         c.Dispatch(0, 1920/8,1080/8,1);
 
-        SaveRT3DToTexture3DAsset(r, "FogVolume");
+       SaveRT3DToTexture3DAsset(r, "FogVolume");
       //  AssetDatabase.CreateAsset(r, "Assets/FogVolume.asset");
         
     }
@@ -89,13 +89,32 @@ public class CreatNoise : MonoBehaviour
     void Update()
     {
         
-       
-     //   pl.transform.GetComponent<Renderer>().material.mainTexture = r;
+     
+        
+   //   RenderTexture.ReleaseTemporary(r);
+   //
+   // //  r = new RenderTexture(1920, 1080, 0);
+   //
+   //   r = RenderTexture.GetTemporary(1920,1080,0);
+   //   r.enableRandomWrite = true;
+   //   r.dimension = TextureDimension.Tex3D;
+   //   r.wrapMode = TextureWrapMode.Repeat;
+   //   r.volumeDepth = 16;
+   //   r.Create();
+   //   c.SetTexture(0,"Result",r);
+   //   c.SetFloat("persistance", persistance);
+   //   c.SetFloat("amp", amp);
+   //   c.SetFloat("freq", freq);
+   //   c.SetFloat("freqchange", freqchange);
+   //   c.SetFloat("seed", seed);
+   //   c.SetInt("octaves", octaves);
+   //   c.SetVector("offset", offset);
+   //      
+   //   c.Dispatch(0, 1920/8,1080/8,1);
+
         
         
-      
-        
-        
+         //   pl.transform.GetComponent<Renderer>().material.mainTexture = r;
         
         
         

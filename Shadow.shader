@@ -89,6 +89,7 @@ Shader "Unlit/Shadow"
             int _samples;
             bool Dither = false;
             float _Albedo, _Phi, _Scale;
+            float3 sdfOrigin, sdfScale;
             sampler3D noise;
             
             
@@ -123,6 +124,21 @@ Shader "Unlit/Shadow"
                           
 
             return shadowmask;
+
+
+
+                
+            }
+
+
+            bool sdfBox(float3 size, float3 origin, float3 nupoint)
+            {
+                nupoint = nupoint- origin;
+
+                float3 q = ((abs(nupoint) - size));
+                
+                return length(float3(max(q.x,0),max(q.y,0),max(q.z,0)));
+                //alternativley length(max(q,0)) + min(max(max(q.x,q.y),q,z),0);
 
 
 
@@ -230,12 +246,14 @@ Shader "Unlit/Shadow"
                  //March to new point in world space.
                 x += viewDir * s;
                  nodiv += viewDir * s;
+                 bool inbox = sdfBox(sdfScale, sdfOrigin, nodiv);
+                 
              //   float noisesamp = tex3Dlod(noise , float4((float3(i.uv.xy, 1)*_Scale).xyz,0)+_Time.y*0.05 ).r;
-
-
+                 
+               
                  
                  //wip
- float noisesamp = tex3Dlod(noise , float4(float3(nodiv.xyz*_Scale).xyz,0)+_Time.y*0.05  ).r;
+                float noisesamp = tex3Dlod(noise , float4(float3(nodiv.xyz*_Scale).xyz+_Time.y*0.001,0)  ).r;
                 
                  //noisesamp= saturate(noisesamp*0.5+0.5);
                  noisesamp= saturate(noisesamp);
@@ -246,7 +264,8 @@ Shader "Unlit/Shadow"
                  float Li = Henyey(_Albedo, dot(viewDir, _WorldSpaceLightPos0))*v;
                  
                  //Add color
-                 L +=  Li*_Phi*(noisesamp);
+                // L +=  Li*_Phi*(noisesamp)*!inbox;
+                 L +=  Li*_Phi*(noisesamp)*!inbox;
               
             
                 //L +=  Li*_Phi;

@@ -38,7 +38,8 @@ public class Volumetric : MonoBehaviour
     [SerializeField] private bool _Point = false;
     [SerializeField]private Light _dePoint;
     [SerializeField] private Texture3D t3d;
-   
+    public Vector3 SDFsize;
+    public Vector3 SDForigin;
     
     //make own noise compute shader for noise 3d texture.
     
@@ -53,8 +54,8 @@ public class Volumetric : MonoBehaviour
 
     private void Start()
     {
-       
 
+      
         theta = Mathf.Cos((_dePoint.spotAngle / 2) * Mathf.Deg2Rad);
        
     }
@@ -135,6 +136,7 @@ public class Volumetric : MonoBehaviour
     private void OnRenderImage(RenderTexture source, RenderTexture destination)
     {
         Vector4 pos = _dePoint.transform.position;
+       
         Downsamp = assighn;
         //float theta = (_dePoint.spotAngle/2)*Mathf.Deg2Rad;
         //Mathf.Cos(theta) do here to update angle live
@@ -143,6 +145,8 @@ public class Volumetric : MonoBehaviour
         VolShader.SetFloat("_Scale", _Scale);
         VolShader.SetInt("_samples", _samples);
         VolShader.SetColor("_Fcol", _Fcol );
+        VolShader.SetVector("sdfOrigin", SDForigin );
+        VolShader.SetVector("sdfScale", SDFsize );
         Matrix4x4 projectionMatrix = GL.GetGPUProjectionMatrix(Camera.main.projectionMatrix, false);
         VolShader.SetMatrix("InverseView", Camera.main.cameraToWorldMatrix);
         VolShader.SetMatrix("InverseProj", projectionMatrix.inverse);
@@ -204,6 +208,7 @@ public class Volumetric : MonoBehaviour
          VolShader.SetTexture("noise", t3d);
 
          Graphics.Blit(resolua,resolu,VolShader,0);
+     
      }
      else
      {
@@ -267,7 +272,7 @@ public class Volumetric : MonoBehaviour
         VolShader.SetTexture("Quarter" ,resolu );
         
      
-        Graphics.Blit(source,destination,VolShader,4);
+       Graphics.Blit(source,destination,VolShader,4);
         
      
      
